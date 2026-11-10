@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="多層薄膜の透過率・反射率スペクトルを計算するブラウザアプリ">
+  <title>HAKUMAKU — 多層薄膜スペクトル計算</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark app-icon" aria-hidden="true"></span><span><b>HAKUMAKU</b><small>Thin-film spectrum studio</small></span></div>
+    <nav class="top-actions" aria-label="ファイル操作">
+      <button class="btn ghost" id="newBtn">新規</button>
+      <label class="btn ghost file-btn">層構成を開く<input id="layerFile" type="file" accept=".layer,text/plain"></label>
+      <button class="btn ghost" id="saveLayerBtn">層構成を保存</button>
+      <button class="btn icon-btn" id="helpBtn" aria-label="使い方">?</button>
+    </nav>
+  </header>
+
+  <main class="app-shell">
+    <aside class="materials-panel panel">
+      <div class="panel-title"><span>材料ライブラリ</span><span class="count" id="materialCount">—</span></div>
+      <div class="search"><span>⌕</span><input id="materialSearch" placeholder="材料名を検索…" autocomplete="off"></div>
+      <div class="material-list" id="materialList" role="listbox" aria-label="材料一覧"></div>
+      <div class="aside-actions">
+        <button class="btn secondary" id="addSelectedBtn">選択した材料を追加</button>
+        <label class="text-link file-btn">＋ nkファイルを読込<input id="nkFile" type="file" accept=".nk,text/plain" multiple></label>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <section class="config-grid config-first">
+        <div class="panel settings-card">
+          <div class="card-title"><span class="step">1</span><b>基板</b></div>
+          <label>材質<input id="substrate" list="substrateOptions" placeholder="材料名を入力・選択" autocomplete="off"><datalist id="substrateOptions"></datalist></label>
+          <div class="field-row"><label>厚さ<input id="substrateThickness" type="number" min="0" step="0.1" value="1"></label><span class="unit">mm</span></div>
+          <label class="switch-row"><input id="backSurface" type="checkbox" checked><span class="switch"></span><span>裏面反射を含める</span></label>
+        </div>
+        <div class="panel settings-card">
+          <div class="card-title"><span class="step">2</span><b>波長範囲</b></div>
+          <div class="triple-fields"><label>開始 (nm)<input id="waveMin" type="number" value="400"></label><label>終了 (nm)<input id="waveMax" type="number" value="800"></label><label>間隔 (nm)<input id="waveStep" type="number" min="0.01" value="1"></label></div>
+          <div class="range-note" id="rangeNote">401 データ点</div>
+        </div>
+      </section>
+
+      <section class="panel stack-panel">
+        <div class="section-head">
+          <div><p class="eyebrow">STACK DESIGN</p><h1>薄膜構造</h1></div>
+          <div class="section-actions"><span id="layerCount">0 / 100 層</span><button class="btn secondary" id="clearLayersBtn">全層を削除</button></div>
+        </div>
+        <div class="stack-visual" id="stackVisual" aria-label="積層構造の模式図"></div>
+        <div class="layer-table-wrap">
+          <table class="layer-table">
+            <thead><tr><th>#</th><th>材料</th><th>膜厚 (nm)</th><th>光学厚</th><th></th></tr></thead>
+            <tbody id="layerRows"></tbody>
+          </table>
+          <div class="empty-state" id="layerEmpty"><span>▱</span><b>材料を追加してください</b><small>左の一覧で材料をダブルクリック、または選択して追加します</small></div>
+        </div>
+        <div class="layer-tuner" id="layerTuner">
+          <div class="tuner-target"><span class="eyebrow">SELECTED LAYER</span><b id="tunerLayerName">レイヤーを選択</b><small id="tunerLayerIndex">表の行をクリックしてください</small></div>
+          <div class="tuner-value"><label>膜厚 <input id="tunerThickness" type="number" min="0" step="0.1" value="0"><span>nm</span></label></div>
+          <div class="tuner-step"><small>変更量</small><div class="step-options" id="thicknessSteps"><button data-step="0.1">0.1</button><button class="active" data-step="1">1</button><button data-step="10">10</button><button data-step="100">100</button><span>nm</span></div></div>
+          <div class="tuner-buttons"><button class="nudge" id="thicknessDown" title="膜厚を減らす">−</button><button class="nudge plus" id="thicknessUp" title="膜厚を増やす">＋</button></div>
+          <label class="switch-row live-switch"><input id="liveSimulation" type="checkbox" checked><span class="switch"></span><span><b>連続シミュレーション</b><small>膜厚変更を即時反映</small></span></label>
+        </div>
+      </section>
+
+      <section class="panel result-panel">
+        <div class="section-head result-head">
+          <div class="result-title">
+            <div><p class="eyebrow">SPECTRUM</p><h2>透過・反射率スペクトル</h2></div>
+            <button class="btn primary" id="calculateBtn"><span>スペクトルを計算</span><kbd>⌘ ↵</kbd></button>
+          </div>
+          <div class="legend-controls">
+            <label><input type="checkbox" id="showT" checked><span class="dot t"></span>透過率 T</label>
+            <label><input type="checkbox" id="showR" checked><span class="dot r"></span>反射率 R</label>
+            <label><input type="checkbox" id="showCalcMarkers"><span class="marker-sample"></span>計算マーカー</label>
+            <label class="muted"><input type="checkbox" id="showRefT" checked><span class="dot ref-t"></span>参照 T</label>
+            <label class="muted"><input type="checkbox" id="showRefR" checked><span class="dot ref-r"></span>参照 R</label>
+            <label class="muted"><input type="checkbox" id="showRefMarkers"><span class="marker-sample ref-marker"></span>参照マーカー</label>
+          </div>
+          <div class="result-actions">
+            <label class="btn secondary file-btn">参照データ<input id="referenceFile" type="file" accept=".csv,.txt,text/plain"></label>
+            <button class="btn secondary" id="exportCsvBtn">CSV出力</button>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="chart" role="img" aria-label="透過率と反射率のスペクトルグラフ"></canvas><div class="chart-tooltip" id="chartTooltip"></div><div class="chart-empty" id="chartEmpty"><b>透過・反射率スペクトルがここに表示されます</b><span>薄膜構造と波長範囲を設定し「スペクトルを計算」を押してください</span></div></div>
+        <div class="summary" id="summary"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="nkDialog" class="modal"><form method="dialog"><button class="modal-close" aria-label="閉じる">×</button><p class="eyebrow">OPTICAL CONSTANTS</p><h2 id="nkTitle">材料</h2><p id="nkComment"></p><canvas id="nkChart"></canvas><div class="modal-foot"><div class="nk-foot-info"><span id="nkRange"></span><label class="marker-option"><input id="showNkMarkers" type="checkbox"><span class="marker-sample"></span>データ点マーカー</label></div><button class="btn primary">閉じる</button></div></form></dialog>
+  <dialog id="helpDialog" class="modal help-modal"><form method="dialog"><button class="modal-close" aria-label="閉じる">×</button><p class="eyebrow">QUICK GUIDE</p><h2>使い方</h2><ol><li><b>基板を選ぶ</b><span>基板の材質と厚さ、裏面反射の有無を設定します。</span></li><li><b>膜を積む</b><span>材料をダブルクリックして追加し、膜厚を入力します。上側が入射側です。</span></li><li><b>計算する</b><span>波長範囲を指定して計算。CSV、.layer形式で保存できます。</span></li></ol><p class="notice">計算は垂直入射を前提とします。材料データの範囲外では端点の n・k 値を使用します。</p><button class="btn primary">はじめる</button></form></dialog>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
