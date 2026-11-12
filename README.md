@@ -1,17 +1,26 @@
-# HAKUMAKU Web
+# HAKUMAKU
 
-多層薄膜の透過率・反射率スペクトルを計算するWebアプリです。
+A web application for calculating the transmission and reflection spectra of multilayer thin-film structures.
 
-## 公開ページ
+## Online Demo
 
-https://nyaonyaosan.github.io/HAKUMAKU/
+[HAKUMAKU Web](https://nyaonyaosan.github.io/HAKUMAKU/)
 
-## 構成
+## Project Structure
 
-- `index.html` — 画面本体
-- `styles.css` — デザイン
-- `app.js` — 計算処理と画面操作
-- `Materials/index.txt` — 材料一覧
-- `Materials/*.nk` — 材料ごとの光学定数データ
+- `index.html` — Main user interface
+- `styles.css` — Application styling
+- `app.js` — Calculation engine and UI control
+- `Materials/index.txt` — List of available materials
+- `Materials/*.nk` — Optical constants data for each material
 
-材料データは、オリジナルと同じく材料ごとの `.nk` ファイルとして収録しています。
+## Material Data
+
+Material data are stored in individual `.nk` files, following the same format as the original HAKUMAKU application.
+
+Each `.nk` file contains wavelength-dependent optical constants:
+
+- Refractive index (*n*)
+- Extinction coefficient (*k*)
+
+These data are used for calculating the optical properties of multilayer thin-film structures.
